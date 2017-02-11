@@ -1,8 +1,9 @@
 ---
 en:
   about:
-    about_instance: "<em>%{instance}</em> is a Mastodon instance."
-    about_mastodon: Hoy! Mastodon is a <em>free, open-source</em> social network server. A <em>decentralized</em> alternative to commercial platforms, it avoids the risks of a single company monopolizing your communication. Anyone can run Mastodon and participate in the <em>social network</em> seamlessly.
+    about_instance: "<em>%{instance}</em> is a Mastodon instance for Game Creators, Makers, and Jammers. Let's make stuff!"
+    about_mastodon: Mastodon is a <em>free, open-source</em> social network server. A <em>decentralized</em> alternative to commercial platforms, and part of the greater <em>GNU social</em> network.
+    about_more: "<em>%{instance}</em> exists as an experiment, and a precaution. We ask that you be polite and kind. If you're new to Mastodon, you should check out <em><a href="https://mastodon.social">mastodon.social</a></em>. If you're looking for a safe space for creators, we've set this up for you."
     business_email: 'Business e-mail:'
     contact: Contact
     domain_count_after: other instances
