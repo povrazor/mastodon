@@ -20,7 +20,7 @@
     indie.chat
 
   %p= t('about.about_instance', instance: Rails.configuration.x.local_domain).html_safe
-  %p= t('about.about_mastodon').html_safe
+  %p= t('about.about_mastodon', instance: Rails.configuration.x.local_domain).html_safe
   %p= t('about.about_more', instance: Rails.configuration.x.local_domain).html_safe
 
   .screenshot= image_tag 'screenshot.png'
