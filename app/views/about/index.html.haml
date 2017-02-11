@@ -8,7 +8,7 @@
   %meta{ property: 'og:site_name', content: 'Mastodon' }/
   %meta{ property: 'og:type', content: 'website' }/
   %meta{ property: 'og:title', content: Rails.configuration.x.local_domain }/
-  %meta{ property: 'og:description', content: @description.blank? ? "Mastodon is a free, open-source social network server. A decentralized alternative to commercial platforms, it avoids the risks of a single company monopolizing your communication. Anyone can run Mastodon and participate in the social network seamlessly" : strip_tags(@description) }/
+  %meta{ property: 'og:description', content: @description.blank? ? "Sup! Mastodon is a free, open-source social network server. A decentralized alternative to commercial platforms, it avoids the risks of a single company monopolizing your communication. Anyone can run Mastodon and participate in the social network seamlessly" : strip_tags(@description) }/
   %meta{ property: 'og:image', content: asset_url('mastodon_small.jpg') }/
   %meta{ property: 'og:image:width', content: '400' }/
   %meta{ property: 'og:image:height', content: '400' }/
@@ -16,8 +16,8 @@
 
 .wrapper
   %h1
-    = image_tag 'logo.png'
-    Mastodon
+    = image_tag 'logo-indiechat.png'
+    indie.chat
 
   %p= t('about.about_mastodon').html_safe
   %p= t('about.about_instance', instance: Rails.configuration.x.local_domain).html_safe
