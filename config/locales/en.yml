@@ -3,7 +3,6 @@ en:
   about:
     about_instance: "<em>%{instance}</em> is a micro-blogging network for game Creators and Jammers."
     about_mastodon: "<em>%{instance}</em> is powered by Mastodon, a <em>free, open-source</em> social network server. If you're new to Mastodon, check out <a href='https://mastodon.social'>mastodon.social</a>."
-    about_more: "<em>%{instance}</em> is an experiment. Please be polite, kind, and understanding of others."
     business_email: 'Business e-mail:'
     contact: Contact
     domain_count_after: other instances
