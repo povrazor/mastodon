@@ -1,91 +1,78 @@
 import { connect } from 'react-redux';
 import ComposeForm from '../components/compose_form';
+import { uploadCompose } from '../../../actions/compose';
+import { createSelector } from 'reselect';
 import {
   changeCompose,
   submitCompose,
-  cancelReplyCompose,
   clearComposeSuggestions,
   fetchComposeSuggestions,
   selectComposeSuggestion,
-  changeComposeSensitivity,
-  changeComposeSpoilerness,
   changeComposeSpoilerText,
-  changeComposeVisibility,
-  changeComposeListability
+  insertEmojiCompose
 } from '../../../actions/compose';
-import { makeGetStatus } from '../../../selectors';
 
-const makeMapStateToProps = () => {
-  const getStatus = makeGetStatus();
+const getMentionedUsernames = createSelector(state => state.getIn(['compose', 'text']), text => text.match(/(?:^|[^\/\w])@([a-z0-9_]+@[a-z0-9\.\-]+)/ig));
 
-  const mapStateToProps = function (state, props) {
-    return {
-      text: state.getIn(['compose', 'text']),
-      suggestion_token: state.getIn(['compose', 'suggestion_token']),
-      suggestions: state.getIn(['compose', 'suggestions']),
-      sensitive: state.getIn(['compose', 'sensitive']),
-      spoiler: state.getIn(['compose', 'spoiler']),
-      spoiler_text: state.getIn(['compose', 'spoiler_text']),
-      unlisted: state.getIn(['compose', 'unlisted'], ),
-      private: state.getIn(['compose', 'private']),
-      fileDropDate: state.getIn(['compose', 'fileDropDate']),
-      is_submitting: state.getIn(['compose', 'is_submitting']),
-      is_uploading: state.getIn(['compose', 'is_uploading']),
-      in_reply_to: getStatus(state, state.getIn(['compose', 'in_reply_to'])),
-      media_count: state.getIn(['compose', 'media_attachments']).size,
-      me: state.getIn(['compose', 'me']),
-    };
-  };
+const getMentionedDomains = createSelector(getMentionedUsernames, mentionedUsernamesWithDomains => {
+  return mentionedUsernamesWithDomains !== null ? [...new Set(mentionedUsernamesWithDomains.map(item => item.split('@')[2]))] : [];
+});
 
-  return mapStateToProps;
-};
+const mapStateToProps = (state, props) => {
+  const mentionedUsernames = getMentionedUsernames(state);
+  const mentionedUsernamesWithDomains = getMentionedDomains(state);
 
-const mapDispatchToProps = function (dispatch) {
   return {
-    onChange (text) {
-      dispatch(changeCompose(text));
-    },
-
-    onSubmit () {
-      dispatch(submitCompose());
-    },
-
-    onCancelReply () {
-      dispatch(cancelReplyCompose());
-    },
-
-    onClearSuggestions () {
-      dispatch(clearComposeSuggestions());
-    },
-
-    onFetchSuggestions (token) {
-      dispatch(fetchComposeSuggestions(token));
-    },
-
-    onSuggestionSelected (position, token, accountId) {
-      dispatch(selectComposeSuggestion(position, token, accountId));
-    },
-
-    onChangeSensitivity (checked) {
-      dispatch(changeComposeSensitivity(checked));
-    },
-
-    onChangeSpoilerness (checked) {
-      dispatch(changeComposeSpoilerness(checked));
-    },
-
-    onChangeSpoilerText (checked) {
-      dispatch(changeComposeSpoilerText(checked));
-    },
-
-    onChangeVisibility (checked) {
-      dispatch(changeComposeVisibility(checked));
-    },
-
-    onChangeListability (checked) {
-      dispatch(changeComposeListability(checked));
-    }
-  }
+    text: state.getIn(['compose', 'text']),
+    suggestion_token: state.getIn(['compose', 'suggestion_token']),
+    suggestions: state.getIn(['compose', 'suggestions']),
+    spoiler: state.getIn(['compose', 'spoiler']),
+    spoiler_text: state.getIn(['compose', 'spoiler_text']),
+    privacy: state.getIn(['compose', 'privacy']),
+    focusDate: state.getIn(['compose', 'focusDate']),
+    preselectDate: state.getIn(['compose', 'preselectDate']),
+    is_submitting: state.getIn(['compose', 'is_submitting']),
+    is_uploading: state.getIn(['compose', 'is_uploading']),
+    me: state.getIn(['compose', 'me']),
+    needsPrivacyWarning: (state.getIn(['compose', 'privacy']) === 'private' || state.getIn(['compose', 'privacy']) === 'direct') && mentionedUsernames !== null,
+    mentionedDomains: mentionedUsernamesWithDomains
+  };
 };
 
-export default connect(makeMapStateToProps, mapDispatchToProps)(ComposeForm);
+const mapDispatchToProps = (dispatch) => ({
+
+  onChange (text) {
+    dispatch(changeCompose(text));
+  },
+
+  onSubmit () {
+    dispatch(submitCompose());
+  },
+
+  onClearSuggestions () {
+    dispatch(clearComposeSuggestions());
+  },
+
+  onFetchSuggestions (token) {
+    dispatch(fetchComposeSuggestions(token));
+  },
+
+  onSuggestionSelected (position, token, accountId) {
+    dispatch(selectComposeSuggestion(position, token, accountId));
+  },
+
+  onChangeSpoilerText (checked) {
+    dispatch(changeComposeSpoilerText(checked));
+  },
+
+  onPaste (files) {
+    dispatch(uploadCompose(files));
+  },
+
+  onPickEmoji (position, data) {
+    dispatch(insertEmojiCompose(position, data));
+  },
+
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(ComposeForm);

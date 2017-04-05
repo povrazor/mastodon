@@ -32,6 +32,7 @@ import {
   FAVOURITED_STATUSES_FETCH_SUCCESS,
   FAVOURITED_STATUSES_EXPAND_SUCCESS
 } from '../actions/favourites';
+import { SEARCH_FETCH_SUCCESS } from '../actions/search';
 import Immutable from 'immutable';
 
 const normalizeStatus = (state, status) => {
@@ -39,14 +40,15 @@ const normalizeStatus = (state, status) => {
     return state;
   }
 
-  status.account = status.account.id;
+  const normalStatus   = { ...status };
+  normalStatus.account = status.account.id;
 
   if (status.reblog && status.reblog.id) {
-    state         = normalizeStatus(state, status.reblog);
-    status.reblog = status.reblog.id;
+    state               = normalizeStatus(state, status.reblog);
+    normalStatus.reblog = status.reblog.id;
   }
 
-  return state.update(status.id, Immutable.Map(), map => map.mergeDeep(Immutable.fromJS(status)));
+  return state.update(status.id, Immutable.Map(), map => map.mergeDeep(Immutable.fromJS(normalStatus)));
 };
 
 const normalizeStatuses = (state, statuses) => {
@@ -107,6 +109,7 @@ export default function statuses(state = initialState, action) {
   case NOTIFICATIONS_EXPAND_SUCCESS:
   case FAVOURITED_STATUSES_FETCH_SUCCESS:
   case FAVOURITED_STATUSES_EXPAND_SUCCESS:
+  case SEARCH_FETCH_SUCCESS:
     return normalizeStatuses(state, action.statuses);
   case TIMELINE_DELETE:
     return deleteStatus(state, action.id, action.references);

@@ -2,5 +2,7 @@
 
 module Mastodon
   class Error < StandardError; end
-  class NotPermitted < Error; end
+  class NotPermittedError < Error; end
+  class ValidationError < Error; end
+  class RaceConditionError < Error; end
 end

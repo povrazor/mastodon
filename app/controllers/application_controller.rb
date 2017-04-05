@@ -39,7 +39,14 @@ class ApplicationController < ActionController::Base
   end
 
   def set_user_activity
-    current_user.touch(:current_sign_in_at) if !current_user.nil? && (current_user.current_sign_in_at.nil? || current_user.current_sign_in_at < 24.hours.ago)
+    return unless !current_user.nil? && (current_user.current_sign_in_at.nil? || current_user.current_sign_in_at < 24.hours.ago)
+
+    # Mark user as signed-in today
+    current_user.update_tracked_fields(request)
+
+    # If the sign in is after a two week break, we need to regenerate their feed
+    RegenerationWorker.perform_async(current_user.account_id) if current_user.last_sign_in_at < 14.days.ago
+    return
   end
 
   def check_suspension
@@ -51,21 +58,21 @@ class ApplicationController < ActionController::Base
   def not_found
     respond_to do |format|
       format.any  { head 404 }
-      format.html { render 'errors/404', layout: 'error' }
+      format.html { render 'errors/404', layout: 'error', status: 404 }
     end
   end
 
   def gone
     respond_to do |format|
       format.any  { head 410 }
-      format.html { render 'errors/410', layout: 'error' }
+      format.html { render 'errors/410', layout: 'error', status: 410 }
     end
   end
 
   def unprocessable_entity
     respond_to do |format|
       format.any  { head 422 }
-      format.html { render 'errors/422', layout: 'error' }
+      format.html { render 'errors/422', layout: 'error', status: 422 }
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170209184350) do
+ActiveRecord::Schema.define(version: 20170403172249) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -43,6 +43,12 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.boolean  "silenced",                default: false, null: false
     t.boolean  "suspended",               default: false, null: false
     t.boolean  "locked",                  default: false, null: false
+    t.string   "header_remote_url",       default: "",    null: false
+    t.integer  "statuses_count",          default: 0,     null: false
+    t.integer  "followers_count",         default: 0,     null: false
+    t.integer  "following_count",         default: 0,     null: false
+    t.index "(((setweight(to_tsvector('simple'::regconfig, (display_name)::text), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, (username)::text), 'B'::\"char\")) || setweight(to_tsvector('simple'::regconfig, (COALESCE(domain, ''::character varying))::text), 'C'::\"char\")))", name: "search_index", using: :gin
+    t.index "lower((username)::text), lower((domain)::text)", name: "index_accounts_on_username_and_domain_lower", using: :btree
     t.index ["username", "domain"], name: "index_accounts_on_username_and_domain", unique: true, using: :btree
   end
 
@@ -87,8 +93,20 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.index ["account_id", "target_account_id"], name: "index_follows_on_account_id_and_target_account_id", unique: true, using: :btree
   end
 
+  create_table "imports", force: :cascade do |t|
+    t.integer  "account_id",        null: false
+    t.integer  "type",              null: false
+    t.boolean  "approved"
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+    t.string   "data_file_name"
+    t.string   "data_content_type"
+    t.integer  "data_file_size"
+    t.datetime "data_updated_at"
+  end
+
   create_table "media_attachments", force: :cascade do |t|
-    t.integer  "status_id"
+    t.bigint   "status_id"
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
@@ -98,21 +116,30 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.datetime "created_at",                     null: false
     t.datetime "updated_at",                     null: false
     t.string   "shortcode"
+    t.integer  "type",              default: 0,  null: false
     t.index ["shortcode"], name: "index_media_attachments_on_shortcode", unique: true, using: :btree
     t.index ["status_id"], name: "index_media_attachments_on_status_id", using: :btree
   end
 
   create_table "mentions", force: :cascade do |t|
     t.integer  "account_id"
-    t.integer  "status_id"
+    t.bigint   "status_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "status_id"], name: "index_mentions_on_account_id_and_status_id", unique: true, using: :btree
   end
 
+  create_table "mutes", force: :cascade do |t|
+    t.integer  "account_id",        null: false
+    t.integer  "target_account_id", null: false
+    t.datetime "created_at",        null: false
+    t.datetime "updated_at",        null: false
+    t.index ["account_id", "target_account_id"], name: "index_mutes_on_account_id_and_target_account_id", unique: true, using: :btree
+  end
+
   create_table "notifications", force: :cascade do |t|
     t.integer  "account_id"
-    t.integer  "activity_id"
+    t.bigint   "activity_id"
     t.string   "activity_type"
     t.datetime "created_at",      null: false
     t.datetime "updated_at",      null: false
@@ -160,7 +187,7 @@ ActiveRecord::Schema.define(version: 20170209184350) do
   end
 
   create_table "preview_cards", force: :cascade do |t|
-    t.integer  "status_id"
+    t.bigint   "status_id"
     t.string   "url",                default: "", null: false
     t.string   "title"
     t.string   "description"
@@ -173,6 +200,17 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.index ["status_id"], name: "index_preview_cards_on_status_id", unique: true, using: :btree
   end
 
+  create_table "reports", force: :cascade do |t|
+    t.integer  "account_id",                                 null: false
+    t.integer  "target_account_id",                          null: false
+    t.bigint   "status_ids",                 default: [],    null: false, array: true
+    t.text     "comment",                    default: "",    null: false
+    t.boolean  "action_taken",               default: false, null: false
+    t.datetime "created_at",                                 null: false
+    t.datetime "updated_at",                                 null: false
+    t.integer  "action_taken_by_account_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.string   "var",        null: false
     t.text     "value"
@@ -183,14 +221,14 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.index ["thing_type", "thing_id", "var"], name: "index_settings_on_thing_type_and_thing_id_and_var", unique: true, using: :btree
   end
 
-  create_table "statuses", force: :cascade do |t|
+  create_table "statuses", id: :bigserial, force: :cascade do |t|
     t.string   "uri"
     t.integer  "account_id",                             null: false
     t.text     "text",                   default: "",    null: false
     t.datetime "created_at",                             null: false
     t.datetime "updated_at",                             null: false
-    t.integer  "in_reply_to_id"
-    t.integer  "reblog_of_id"
+    t.bigint   "in_reply_to_id"
+    t.bigint   "reblog_of_id"
     t.string   "url"
     t.boolean  "sensitive",              default: false
     t.integer  "visibility",             default: 0,     null: false
@@ -198,6 +236,8 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.integer  "application_id"
     t.text     "spoiler_text",           default: "",    null: false
     t.boolean  "reply",                  default: false
+    t.integer  "favourites_count",       default: 0,     null: false
+    t.integer  "reblogs_count",          default: 0,     null: false
     t.index ["account_id"], name: "index_statuses_on_account_id", using: :btree
     t.index ["in_reply_to_id"], name: "index_statuses_on_in_reply_to_id", using: :btree
     t.index ["reblog_of_id"], name: "index_statuses_on_reblog_of_id", using: :btree
@@ -205,14 +245,14 @@ ActiveRecord::Schema.define(version: 20170209184350) do
   end
 
   create_table "statuses_tags", id: false, force: :cascade do |t|
-    t.integer "status_id", null: false
+    t.bigint  "status_id", null: false
     t.integer "tag_id",    null: false
     t.index ["tag_id", "status_id"], name: "index_statuses_tags_on_tag_id_and_status_id", unique: true, using: :btree
   end
 
   create_table "stream_entries", force: :cascade do |t|
     t.integer  "account_id"
-    t.integer  "activity_id"
+    t.bigint   "activity_id"
     t.string   "activity_type"
     t.datetime "created_at",                    null: false
     t.datetime "updated_at",                    null: false
@@ -237,6 +277,7 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.string   "name",       default: "", null: false
     t.datetime "created_at",              null: false
     t.datetime "updated_at",              null: false
+    t.index "to_tsvector('simple'::regconfig, (name)::text)", name: "hashtag_search_index", using: :gin
     t.index ["name"], name: "index_tags_on_name", unique: true, using: :btree
   end
 
@@ -265,6 +306,7 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.string   "encrypted_otp_secret_salt"
     t.integer  "consumed_timestep"
     t.boolean  "otp_required_for_login"
+    t.datetime "last_emailed_at"
     t.index ["account_id"], name: "index_users_on_account_id", using: :btree
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true, using: :btree
     t.index ["email"], name: "index_users_on_email", unique: true, using: :btree
@@ -279,4 +321,5 @@ ActiveRecord::Schema.define(version: 20170209184350) do
     t.index ["user_id"], name: "index_web_settings_on_user_id", unique: true, using: :btree
   end
 
+  add_foreign_key "statuses", "statuses", column: "reblog_of_id", on_delete: :cascade
 end

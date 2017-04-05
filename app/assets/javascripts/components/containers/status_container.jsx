@@ -11,51 +11,22 @@ import {
   unreblog,
   unfavourite
 } from '../actions/interactions';
-import { blockAccount } from '../actions/accounts';
+import {
+  blockAccount,
+  muteAccount
+} from '../actions/accounts';
 import { deleteStatus } from '../actions/statuses';
-import { openMedia } from '../actions/modal';
+import { initReport } from '../actions/reports';
+import { openModal } from '../actions/modal';
 import { createSelector } from 'reselect'
 import { isMobile } from '../is_mobile'
 
-const mapStateToProps = (state, props) => ({
-  statusBase: state.getIn(['statuses', props.id]),
-  me: state.getIn(['meta', 'me'])
-});
+const makeMapStateToProps = () => {
+  const getStatus = makeGetStatus();
 
-const makeMapStateToPropsInner = () => {
-  const getStatus = (() => {
-    return createSelector(
-      [
-        (_, base)     => base,
-        (state, base) => (base ? state.getIn(['accounts', base.get('account')]) : null),
-        (state, base) => (base ? state.getIn(['statuses', base.get('reblog')], null) : null)
-      ],
-
-      (base, account, reblog) => (base ? base.set('account', account).set('reblog', reblog) : null)
-    );
-  })();
-
-  const mapStateToProps = (state, { statusBase }) => ({
-    status: getStatus(state, statusBase)
-  });
-
-  return mapStateToProps;
-};
-
-const makeMapStateToPropsLast = () => {
-  const getStatus = (() => {
-    return createSelector(
-      [
-        (_, status)     => status,
-        (state, status) => (status ? state.getIn(['accounts', status.getIn(['reblog', 'account'])], null) : null)
-      ],
-
-      (status, reblogAccount) => (status && status.get('reblog') ? status.setIn(['reblog', 'account'], reblogAccount) : status)
-    );
-  })();
-
-  const mapStateToProps = (state, { status }) => ({
-    status: getStatus(state, status)
+  const mapStateToProps = (state, props) => ({
+    status: getStatus(state, props.id),
+    me: state.getIn(['meta', 'me'])
   });
 
   return mapStateToProps;
@@ -92,17 +63,21 @@ const mapDispatchToProps = (dispatch) => ({
   },
 
   onOpenMedia (media, index) {
-    dispatch(openMedia(media, index));
+    dispatch(openModal('MEDIA', { media, index }));
   },
 
   onBlock (account) {
     dispatch(blockAccount(account.get('id')));
-  }
+  },
+
+  onReport (status) {
+    dispatch(initReport(status.get('account'), status));
+  },
+
+  onMute (account) {
+    dispatch(muteAccount(account.get('id')));
+  },
 
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(
-  connect(makeMapStateToPropsInner)(
-    connect(makeMapStateToPropsLast)(Status)
-  )
-);
+export default connect(makeMapStateToProps, mapDispatchToProps)(Status);

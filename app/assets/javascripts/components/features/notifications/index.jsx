@@ -2,10 +2,10 @@ import { connect } from 'react-redux';
 import PureRenderMixin from 'react-addons-pure-render-mixin';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import Column from '../ui/components/column';
-import { expandNotifications, clearNotifications } from '../../actions/notifications';
+import { expandNotifications, clearNotifications, scrollTopNotifications } from '../../actions/notifications';
 import NotificationContainer from './containers/notification_container';
 import { ScrollContainer } from 'react-router-scroll';
-import { defineMessages, injectIntl } from 'react-intl';
+import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
 import ColumnSettingsContainer from './containers/column_settings_container';
 import { createSelector } from 'reselect';
 import Immutable from 'immutable';
@@ -13,7 +13,8 @@ import LoadMore from '../../components/load_more';
 import ClearColumnButton from './components/clear_column_button';
 
 const messages = defineMessages({
-  title: { id: 'column.notifications', defaultMessage: 'Notifications' }
+  title: { id: 'column.notifications', defaultMessage: 'Notifications' },
+  confirm: { id: 'notifications.clear_confirmation', defaultMessage: 'Are you sure you want to clear all your notifications?' }
 });
 
 const getNotifications = createSelector([
@@ -23,7 +24,8 @@ const getNotifications = createSelector([
 
 const mapStateToProps = state => ({
   notifications: getNotifications(state),
-  isLoading: state.getIn(['notifications', 'isLoading'], true)
+  isLoading: state.getIn(['notifications', 'isLoading'], true),
+  isUnread: state.getIn(['notifications', 'unread']) > 0
 });
 
 const Notifications = React.createClass({
@@ -33,7 +35,8 @@ const Notifications = React.createClass({
     dispatch: React.PropTypes.func.isRequired,
     trackScroll: React.PropTypes.bool,
     intl: React.PropTypes.object.isRequired,
-    isLoading: React.PropTypes.bool
+    isLoading: React.PropTypes.bool,
+    isUnread: React.PropTypes.bool
   },
 
   getDefaultProps () {
@@ -51,6 +54,10 @@ const Notifications = React.createClass({
 
     if (250 > offset && !this.props.isLoading) {
       this.props.dispatch(expandNotifications());
+    } else if (scrollTop < 100) {
+      this.props.dispatch(scrollTopNotifications(true));
+    } else {
+      this.props.dispatch(scrollTopNotifications(false));
     }
   },
 
@@ -66,7 +73,9 @@ const Notifications = React.createClass({
   },
 
   handleClear () {
-    this.props.dispatch(clearNotifications());
+    if (window.confirm(this.props.intl.formatMessage(messages.confirm))) {
+      this.props.dispatch(clearNotifications());
+    }
   },
 
   setRef (c) {
@@ -74,26 +83,42 @@ const Notifications = React.createClass({
   },
 
   render () {
-    const { intl, notifications, trackScroll, isLoading } = this.props;
+    const { intl, notifications, trackScroll, isLoading, isUnread } = this.props;
 
-    let loadMore = '';
+    let loadMore       = '';
+    let scrollableArea = '';
+    let unread         = '';
 
     if (!isLoading && notifications.size > 0) {
       loadMore = <LoadMore onClick={this.handleLoadMore} />;
     }
 
-    const scrollableArea = (
-      <div className='scrollable' onScroll={this.handleScroll} ref={this.setRef}>
-        <div>
-          {notifications.map(item => <NotificationContainer key={item.get('id')} notification={item} accountId={item.get('account')} />)}
-          {loadMore}
+    if (isUnread) {
+      unread = <div className='notifications__unread-indicator' />;
+    }
+
+    if (isLoading || notifications.size > 0) {
+      scrollableArea = (
+        <div className='scrollable' onScroll={this.handleScroll} ref={this.setRef}>
+          {unread}
+
+          <div>
+            {notifications.map(item => <NotificationContainer key={item.get('id')} notification={item} accountId={item.get('account')} />)}
+            {loadMore}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      scrollableArea = (
+        <div className='empty-column-indicator' ref={this.setRef}>
+          <FormattedMessage id='empty_column.notifications' defaultMessage="You don't have any notifications yet. Interact with others to start the conversation." />
+        </div>
+      );
+    }
 
     if (trackScroll) {
       return (
-        <Column icon='bell' heading={intl.formatMessage(messages.title)}>
+        <Column icon='bell' active={isUnread} heading={intl.formatMessage(messages.title)}>
           <ColumnSettingsContainer />
           <ClearColumnButton onClick={this.handleClear} />
           <ScrollContainer scrollKey='notifications'>
@@ -103,7 +128,7 @@ const Notifications = React.createClass({
       );
     } else {
       return (
-        <Column icon='bell' heading={intl.formatMessage(messages.title)}>
+        <Column icon='bell' active={isUnread} heading={intl.formatMessage(messages.title)}>
           <ColumnSettingsContainer />
           <ClearColumnButton onClick={this.handleClear} />
           {scrollableArea}

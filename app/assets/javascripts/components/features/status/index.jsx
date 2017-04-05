@@ -1,28 +1,34 @@
-import { connect }           from 'react-redux';
-import PureRenderMixin       from 'react-addons-pure-render-mixin';
-import ImmutablePropTypes    from 'react-immutable-proptypes';
-import { fetchStatus }       from '../../actions/statuses';
-import Immutable             from 'immutable';
-import EmbeddedStatus        from '../../components/status';
-import LoadingIndicator      from '../../components/loading_indicator';
-import DetailedStatus        from './components/detailed_status';
-import ActionBar             from './components/action_bar';
-import Column                from '../ui/components/column';
-import { favourite, reblog } from '../../actions/interactions';
+import { connect } from 'react-redux';
+import PureRenderMixin from 'react-addons-pure-render-mixin';
+import ImmutablePropTypes from 'react-immutable-proptypes';
+import { fetchStatus } from '../../actions/statuses';
+import Immutable from 'immutable';
+import EmbeddedStatus from '../../components/status';
+import MissingIndicator from '../../components/missing_indicator';
+import DetailedStatus from './components/detailed_status';
+import ActionBar from './components/action_bar';
+import Column from '../ui/components/column';
+import {
+  favourite,
+  unfavourite,
+  reblog,
+  unreblog
+} from '../../actions/interactions';
 import {
   replyCompose,
   mentionCompose
-}                            from '../../actions/compose';
-import { deleteStatus }      from '../../actions/statuses';
+} from '../../actions/compose';
+import { deleteStatus } from '../../actions/statuses';
+import { initReport } from '../../actions/reports';
 import {
   makeGetStatus,
   getStatusAncestors,
   getStatusDescendants
-}                            from '../../selectors';
-import { ScrollContainer }   from 'react-router-scroll';
-import ColumnBackButton      from '../../components/column_back_button';
-import StatusContainer       from '../../containers/status_container';
-import { openMedia }         from '../../actions/modal';
+} from '../../selectors';
+import { ScrollContainer } from 'react-router-scroll';
+import ColumnBackButton from '../../components/column_back_button';
+import StatusContainer from '../../containers/status_container';
+import { openModal } from '../../actions/modal';
 import { isMobile } from '../../is_mobile'
 
 const makeMapStateToProps = () => {
@@ -65,7 +71,11 @@ const Status = React.createClass({
   },
 
   handleFavouriteClick (status) {
-    this.props.dispatch(favourite(status));
+    if (status.get('favourited')) {
+      this.props.dispatch(unfavourite(status));
+    } else {
+      this.props.dispatch(favourite(status));
+    }
   },
 
   handleReplyClick (status) {
@@ -73,7 +83,11 @@ const Status = React.createClass({
   },
 
   handleReblogClick (status) {
-    this.props.dispatch(reblog(status));
+    if (status.get('reblogged')) {
+      this.props.dispatch(unreblog(status));
+    } else {
+      this.props.dispatch(reblog(status));
+    }
   },
 
   handleDeleteClick (status) {
@@ -85,7 +99,11 @@ const Status = React.createClass({
   },
 
   handleOpenMedia (media, index) {
-    this.props.dispatch(openMedia(media, index));
+    this.props.dispatch(openModal('MEDIA', { media, index }));
+  },
+
+  handleReport (status) {
+    this.props.dispatch(initReport(status.get('account'), status));
   },
 
   renderChildren (list) {
@@ -99,7 +117,8 @@ const Status = React.createClass({
     if (status === null) {
       return (
         <Column>
-          <LoadingIndicator />
+          <ColumnBackButton />
+          <MissingIndicator />
         </Column>
       );
     }
@@ -123,7 +142,7 @@ const Status = React.createClass({
             {ancestors}
 
             <DetailedStatus status={status} me={me} onOpenMedia={this.handleOpenMedia} />
-            <ActionBar status={status} me={me} onReply={this.handleReplyClick} onFavourite={this.handleFavouriteClick} onReblog={this.handleReblogClick} onDelete={this.handleDeleteClick} onMention={this.handleMentionClick} />
+            <ActionBar status={status} me={me} onReply={this.handleReplyClick} onFavourite={this.handleFavouriteClick} onReblog={this.handleReblogClick} onDelete={this.handleDeleteClick} onMention={this.handleMentionClick} onReport={this.handleReport} />
 
             {descendants}
           </div>

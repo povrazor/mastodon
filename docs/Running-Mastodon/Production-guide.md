@@ -76,7 +76,7 @@ It is recommended to create a special user for mastodon on the server (you could
 ## General dependencies
 
     curl -sL https://deb.nodesource.com/setup_4.x | sudo bash -
-    sudo apt-get install imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs
+    sudo apt-get install imagemagick ffmpeg libpq-dev libxml2-dev libxslt1-dev nodejs file
     sudo npm install -g yarn
 
 ## Redis
@@ -95,7 +95,6 @@ Setup a user and database for Mastodon:
 In the prompt:
 
     CREATE USER mastodon CREATEDB;
-    CREATE DATABASE mastodon_production OWNER mastodon;
     \q
 
 ## Rbenv
@@ -181,7 +180,7 @@ User=mastodon
 WorkingDirectory=/home/mastodon/live
 Environment="RAILS_ENV=production"
 Environment="DB_POOL=5"
-ExecStart=/home/mastodon/.rbenv/shims/bundle exec sidekiq -c 5 -q default -q mailers -q push
+ExecStart=/home/mastodon/.rbenv/shims/bundle exec sidekiq -c 5 -q default -q mailers -q pull -q push
 TimeoutSec=15
 Restart=always
 
@@ -210,7 +209,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-This allows you to `sudo systemctl enable mastodon-*.service` and `sudo systemctl start mastodon-*.service` to get things going.
+This allows you to `sudo systemctl enable /etc/systemd/system/mastodon-*.service` and `sudo systemctl start mastodon-web.service mastodon-sidekiq.service mastodon-streaming.service` to get things going.
 
 ## Cronjobs
 

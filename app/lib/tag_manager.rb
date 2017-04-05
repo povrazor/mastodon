@@ -60,6 +60,12 @@ class TagManager
     domain.nil? || domain.gsub(/[\/]/, '').casecmp(Rails.configuration.x.local_domain).zero?
   end
 
+  def same_acct?(canonical, needle)
+    return true if canonical.casecmp(needle).zero?
+    username, domain = needle.split('@')
+    local_domain?(domain) && canonical.casecmp(username).zero?
+  end
+
   def local_url?(url)
     uri    = Addressable::URI.parse(url)
     domain = uri.host + (uri.port ? ":#{uri.port}" : '')
@@ -82,7 +88,9 @@ class TagManager
 
     case target.object_type
     when :person
-      account_url(target)
+      short_account_url(target)
+    when :note, :comment, :activity
+      short_account_status_url(target.account, target)
     else
       account_stream_entry_url(target.account, target.stream_entry)
     end

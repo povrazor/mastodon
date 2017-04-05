@@ -43,7 +43,7 @@ Rails.application.configure do
   config.log_level = :debug
 
   # Prepend all log lines with the following tags.
-  config.log_tags = [ :request_id ]
+  config.log_tags = [:request_id]
 
   # Use a different logger for distributed setups.
   # config.logger = ActiveSupport::TaggedLogging.new(SyslogLogger.new)
@@ -109,4 +109,11 @@ Rails.application.configure do
   config.to_prepare do
     StatsD.backend = StatsD::Instrument::Backends::NullBackend.new if ENV['STATSD_ADDR'].blank?
   end
+
+  config.action_dispatch.default_headers = {
+    'Server'                 => 'Mastodon',
+    'X-Frame-Options'        => 'DENY',
+    'X-Content-Type-Options' => 'nosniff',
+    'X-XSS-Protection'       => '1; mode=block',
+  }
 end

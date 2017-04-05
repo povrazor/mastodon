@@ -32,12 +32,16 @@ class RemoveStatusService < BaseService
   end
 
   def remove_from_mentioned(status)
+    notified_domains = []
+
     status.mentions.each do |mention|
       mentioned_account = mention.account
 
       if mentioned_account.local?
         unpush(:mentions, mentioned_account, status)
       else
+        next if notified_domains.include?(mentioned_account.domain)
+        notified_domains << mentioned_account.domain
         send_delete_salmon(mentioned_account, status)
       end
     end
@@ -55,7 +59,7 @@ class RemoveStatusService < BaseService
   end
 
   def unpush(type, receiver, status)
-    if status.reblog?
+    if status.reblog? && !redis.zscore(FeedManager.instance.key(type, receiver.id), status.reblog_of_id).nil?
       redis.zadd(FeedManager.instance.key(type, receiver.id), status.reblog_of_id, status.reblog_of_id)
     else
       redis.zremrangebyscore(FeedManager.instance.key(type, receiver.id), status.id, status.id)

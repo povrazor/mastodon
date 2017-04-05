@@ -23,7 +23,7 @@ class Api::V1::StatusesController < ApiController
     statuses = [@status] + @context[:ancestors] + @context[:descendants]
 
     set_maps(statuses)
-    set_counters_maps(statuses)
+    # set_counters_maps(statuses)
   end
 
   def card
@@ -36,7 +36,7 @@ class Api::V1::StatusesController < ApiController
     accounts  = Account.where(id: results.map(&:account_id)).map { |a| [a.id, a] }.to_h
     @accounts = results.map { |r| accounts[r.account_id] }
 
-    set_account_counters_maps(@accounts)
+    # set_account_counters_maps(@accounts)
 
     next_path = reblogged_by_api_v1_status_url(max_id: results.last.id)    if results.size == limit_param(DEFAULT_ACCOUNTS_LIMIT)
     prev_path = reblogged_by_api_v1_status_url(since_id: results.first.id) unless results.empty?
@@ -51,7 +51,7 @@ class Api::V1::StatusesController < ApiController
     accounts  = Account.where(id: results.map(&:account_id)).map { |a| [a.id, a] }.to_h
     @accounts = results.map { |f| accounts[f.account_id] }
 
-    set_account_counters_maps(@accounts)
+    # set_account_counters_maps(@accounts)
 
     next_path = favourited_by_api_v1_status_url(max_id: results.last.id)    if results.size == limit_param(DEFAULT_ACCOUNTS_LIMIT)
     prev_path = favourited_by_api_v1_status_url(since_id: results.first.id) unless results.empty?
@@ -62,12 +62,11 @@ class Api::V1::StatusesController < ApiController
   end
 
   def create
-    @status = PostStatusService.new.call(current_user.account, params[:status], params[:in_reply_to_id].blank? ? nil : Status.find(params[:in_reply_to_id]), media_ids: params[:media_ids],
-                                                                                                                                                             sensitive: params[:sensitive],
-                                                                                                                                                             spoiler_text: params[:spoiler_text],
-                                                                                                                                                             visibility: params[:visibility],
-                                                                                                                                                             application: doorkeeper_token.application)
-
+    @status = PostStatusService.new.call(current_user.account, status_params[:status], status_params[:in_reply_to_id].blank? ? nil : Status.find(status_params[:in_reply_to_id]), media_ids: status_params[:media_ids],
+                                                                                                                                                                                  sensitive: status_params[:sensitive],
+                                                                                                                                                                                  spoiler_text: status_params[:spoiler_text],
+                                                                                                                                                                                  visibility: status_params[:visibility],
+                                                                                                                                                                                  application: doorkeeper_token.application)
     render action: :show
   end
 
@@ -111,5 +110,9 @@ class Api::V1::StatusesController < ApiController
   def set_status
     @status = Status.find(params[:id])
     raise ActiveRecord::RecordNotFound unless @status.permitted?(current_account)
+  end
+
+  def status_params
+    params.permit(:status, :in_reply_to_id, :sensitive, :spoiler_text, :visibility, media_ids: [])
   end
 end

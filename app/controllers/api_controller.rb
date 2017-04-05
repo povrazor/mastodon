@@ -10,7 +10,7 @@ class ApiController < ApplicationController
 
   before_action :set_rate_limit_headers
 
-  rescue_from ActiveRecord::RecordInvalid do |e|
+  rescue_from ActiveRecord::RecordInvalid, Mastodon::ValidationError do |e|
     render json: { error: e.to_s }, status: 422
   end
 
@@ -30,7 +30,7 @@ class ApiController < ApplicationController
     render json: { error: 'Remote SSL certificate could not be verified' }, status: 503
   end
 
-  rescue_from Mastodon::NotPermitted do
+  rescue_from Mastodon::NotPermittedError do
     render json: { error: 'This action is not allowed' }, status: 403
   end
 
@@ -79,6 +79,7 @@ class ApiController < ApplicationController
 
   def require_user!
     current_resource_owner
+    set_user_activity
   rescue ActiveRecord::RecordNotFound
     render json: { error: 'This method requires an authenticated user' }, status: 422
   end

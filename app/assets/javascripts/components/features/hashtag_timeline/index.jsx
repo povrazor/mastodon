@@ -8,9 +8,11 @@ import {
   deleteFromTimelines
 } from '../../actions/timelines';
 import ColumnBackButtonSlim from '../../components/column_back_button_slim';
+import { FormattedMessage } from 'react-intl';
 import createStream from '../../stream';
 
 const mapStateToProps = state => ({
+  hasUnread: state.getIn(['timelines', 'tag', 'unread']) > 0,
   accessToken: state.getIn(['meta', 'access_token'])
 });
 
@@ -19,7 +21,8 @@ const HashtagTimeline = React.createClass({
   propTypes: {
     params: React.PropTypes.object.isRequired,
     dispatch: React.PropTypes.func.isRequired,
-    accessToken: React.PropTypes.string.isRequired
+    accessToken: React.PropTypes.string.isRequired,
+    hasUnread: React.PropTypes.bool
   },
 
   mixins: [PureRenderMixin],
@@ -71,12 +74,12 @@ const HashtagTimeline = React.createClass({
   },
 
   render () {
-    const { id } = this.props.params;
+    const { id, hasUnread } = this.props.params;
 
     return (
-      <Column icon='hashtag' heading={id}>
+      <Column icon='hashtag' active={hasUnread} heading={id}>
         <ColumnBackButtonSlim />
-        <StatusListContainer type='tag' id={id} />
+        <StatusListContainer type='tag' id={id} emptyMessage={<FormattedMessage id='empty_column.hashtag' defaultMessage='There is nothing in this hashtag yet.' />} />
       </Column>
     );
   },

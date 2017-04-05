@@ -39,6 +39,8 @@ class ProcessInteractionService < BaseService
         unfollow!(account, target_account)
       when :favorite
         favourite!(xml, account)
+      when :unfavorite
+        unfavourite!(xml, account)
       when :post
         add_post!(body, account) if mentions_account?(xml, target_account)
       when :share
@@ -62,7 +64,7 @@ class ProcessInteractionService < BaseService
   end
 
   def mentions_account?(xml, account)
-    xml.xpath('/xmlns:entry/xmlns:link[@rel="mentioned"]', xmlns: TagManager::XMLNS).each { |mention_link| return true if mention_link.attribute('href').value == TagManager.instance.url_for(account) }
+    xml.xpath('/xmlns:entry/xmlns:link[@rel="mentioned"]', xmlns: TagManager::XMLNS).each { |mention_link| return true if [TagManager.instance.uri_for(account), TagManager.instance.url_for(account)].include?(mention_link.attribute('href').value) }
     false
   end
 
@@ -119,6 +121,12 @@ class ProcessInteractionService < BaseService
     current_status = status(xml)
     favourite = current_status.favourites.where(account: from_account).first_or_create!(account: from_account)
     NotifyService.new.call(current_status.account, favourite)
+  end
+
+  def unfavourite!(xml, from_account)
+    current_status = status(xml)
+    favourite = current_status.favourites.where(account: from_account).first
+    favourite&.destroy
   end
 
   def add_post!(body, account)

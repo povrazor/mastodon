@@ -4,7 +4,6 @@ require 'sidekiq/web'
 
 Rails.application.routes.draw do
   mount LetterOpenerWeb::Engine, at: 'letter_opener' if Rails.env.development?
-  mount ActionCable.server, at: 'cable'
 
   authenticate :user, lambda { |u| u.admin? } do
     mount Sidekiq::Web, at: 'sidekiq', as: :sidekiq
@@ -25,6 +24,8 @@ Rails.application.routes.draw do
     confirmations:      'auth/confirmations',
   }
 
+  get '/users/:username', to: redirect('/@%{username}'), constraints: { format: :html }
+
   resources :accounts, path: 'users', only: [:show], param: :username do
     resources :stream_entries, path: 'updates', only: [:show] do
       member do
@@ -44,9 +45,20 @@ Rails.application.routes.draw do
     end
   end
 
+  get '/@:username', to: 'accounts#show', as: :short_account
+  get '/@:account_username/:id', to: 'statuses#show', as: :short_account_status
+
   namespace :settings do
     resource :profile, only: [:show, :update]
     resource :preferences, only: [:show, :update]
+    resource :import, only: [:show, :create]
+
+    resource :export, only: [:show] do
+      collection do
+        get :follows, to: 'exports#download_following_list'
+        get :blocks, to: 'exports#download_blocking_list'
+      end
+    end
 
     resource :two_factor_auth, only: [:show] do
       member do
@@ -65,12 +77,24 @@ Rails.application.routes.draw do
 
   namespace :admin do
     resources :pubsubhubbub, only: [:index]
-    resources :domain_blocks, only: [:index, :create]
+    resources :domain_blocks, only: [:index, :new, :create]
     resources :settings, only: [:index, :update]
 
-    resources :accounts, only: [:index, :show, :update] do
+    resources :reports, only: [:index, :show] do
       member do
+        post :resolve
+        post :silence
         post :suspend
+        post :remove
+      end
+    end
+
+    resources :accounts, only: [:index, :show] do
+      member do
+        post :silence
+        post :unsilence
+        post :suspend
+        post :unsuspend
       end
     end
   end
@@ -111,11 +135,17 @@ Rails.application.routes.draw do
       get '/timelines/public',   to: 'timelines#public', as: :public_timeline
       get '/timelines/tag/:id',  to: 'timelines#tag', as: :hashtag_timeline
 
+      get '/search', to: 'search#index', as: :search
+
       resources :follows,    only: [:create]
       resources :media,      only: [:create]
       resources :apps,       only: [:create]
       resources :blocks,     only: [:index]
+      resources :mutes,      only: [:index]
       resources :favourites, only: [:index]
+      resources :reports,    only: [:index, :create]
+
+      resource :instance, only: [:show]
 
       resources :follow_requests, only: [:index] do
         member do
@@ -146,6 +176,8 @@ Rails.application.routes.draw do
           post :unfollow
           post :block
           post :unblock
+          post :mute
+          post :unmute
         end
       end
     end

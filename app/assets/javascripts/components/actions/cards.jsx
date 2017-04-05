@@ -6,6 +6,10 @@ export const STATUS_CARD_FETCH_FAIL    = 'STATUS_CARD_FETCH_FAIL';
 
 export function fetchStatusCard(id) {
   return (dispatch, getState) => {
+    if (getState().getIn(['cards', id], null) !== null) {
+      return;
+    }
+
     dispatch(fetchStatusCardRequest(id));
 
     api(getState).get(`/api/v1/statuses/${id}/card`).then(response => {
@@ -42,6 +46,7 @@ export function fetchStatusCardFail(id, error) {
     type: STATUS_CARD_FETCH_FAIL,
     id,
     error,
-    skipLoading: true
+    skipLoading: true,
+    skipAlert: true
   };
 };

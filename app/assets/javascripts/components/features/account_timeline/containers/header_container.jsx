@@ -5,9 +5,12 @@ import {
   followAccount,
   unfollowAccount,
   blockAccount,
-  unblockAccount
+  unblockAccount,
+  muteAccount,
+  unmuteAccount
 } from '../../../actions/accounts';
 import { mentionCompose } from '../../../actions/compose';
+import { initReport } from '../../../actions/reports';
 
 const makeMapStateToProps = () => {
   const getAccount = makeGetAccount();
@@ -39,6 +42,18 @@ const mapDispatchToProps = dispatch => ({
 
   onMention (account, router) {
     dispatch(mentionCompose(account, router));
+  },
+
+  onReport (account) {
+    dispatch(initReport(account));
+  },
+
+  onMute (account) {
+    if (account.getIn(['relationship', 'muting'])) {
+      dispatch(unmuteAccount(account.get('id')));
+    } else {
+      dispatch(muteAccount(account.get('id')));
+    }
   }
 });
 

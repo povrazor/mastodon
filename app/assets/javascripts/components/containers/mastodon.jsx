@@ -4,7 +4,9 @@ import {
   refreshTimelineSuccess,
   updateTimeline,
   deleteFromTimelines,
-  refreshTimeline
+  refreshTimeline,
+  connectTimeline,
+  disconnectTimeline
 } from '../actions/timelines';
 import { updateNotifications, refreshNotifications } from '../actions/notifications';
 import createBrowserHistory from 'history/lib/createBrowserHistory';
@@ -21,6 +23,7 @@ import UI from '../features/ui';
 import Status from '../features/status';
 import GettingStarted from '../features/getting_started';
 import PublicTimeline from '../features/public_timeline';
+import CommunityTimeline from '../features/community_timeline';
 import AccountTimeline from '../features/account_timeline';
 import HomeTimeline from '../features/home_timeline';
 import Compose from '../features/compose';
@@ -34,6 +37,7 @@ import FollowRequests from '../features/follow_requests';
 import GenericNotFound from '../features/generic_not_found';
 import FavouritedStatuses from '../features/favourited_statuses';
 import Blocks from '../features/blocks';
+import Report from '../features/report';
 import { IntlProvider, addLocaleData } from 'react-intl';
 import en from 'react-intl/locale-data/en';
 import de from 'react-intl/locale-data/de';
@@ -42,6 +46,7 @@ import fr from 'react-intl/locale-data/fr';
 import pt from 'react-intl/locale-data/pt';
 import hu from 'react-intl/locale-data/hu';
 import uk from 'react-intl/locale-data/uk';
+import fi from 'react-intl/locale-data/fi';
 import getMessagesForLocale from '../locales';
 import { hydrateStore } from '../actions/store';
 import createStream from '../stream';
@@ -54,7 +59,7 @@ const browserHistory = useRouterHistory(createBrowserHistory)({
   basename: '/web'
 });
 
-addLocaleData([...en, ...de, ...es, ...fr, ...pt, ...hu, ...uk]);
+addLocaleData([...en, ...de, ...es, ...fr, ...pt, ...hu, ...uk, ...fi]);
 
 const Mastodon = React.createClass({
 
@@ -67,6 +72,14 @@ const Mastodon = React.createClass({
     const accessToken = store.getState().getIn(['meta', 'access_token']);
 
     this.subscription = createStream(accessToken, 'user', {
+
+      connected () {
+        store.dispatch(connectTimeline('home'));
+      },
+
+      disconnected () {
+        store.dispatch(disconnectTimeline('home'));
+      },
 
       received (data) {
         switch(data.event) {
@@ -83,6 +96,7 @@ const Mastodon = React.createClass({
       },
 
       reconnected () {
+        store.dispatch(connectTimeline('home'));
         store.dispatch(refreshTimeline('home'));
         store.dispatch(refreshNotifications());
       }
@@ -115,6 +129,7 @@ const Mastodon = React.createClass({
               <Route path='getting-started' component={GettingStarted} />
               <Route path='timelines/home' component={HomeTimeline} />
               <Route path='timelines/public' component={PublicTimeline} />
+              <Route path='timelines/public/local' component={CommunityTimeline} />
               <Route path='timelines/tag/:id' component={HashtagTimeline} />
 
               <Route path='notifications' component={Notifications} />
@@ -131,6 +146,7 @@ const Mastodon = React.createClass({
 
               <Route path='follow_requests' component={FollowRequests} />
               <Route path='blocks' component={Blocks} />
+              <Route path='report' component={Report} />
 
               <Route path='*' component={GenericNotFound} />
             </Route>

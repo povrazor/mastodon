@@ -24,7 +24,12 @@ class Formatter
   end
 
   def reformat(html)
-    sanitize(html, tags: %w(a br p), attributes: %w(href rel))
+    sanitize(html, tags: %w(a br p span), attributes: %w(href rel class))
+  end
+
+  def plaintext(status)
+    return status.text if status.local?
+    strip_tags(status.text)
   end
 
   def simplified_format(account)
@@ -32,6 +37,7 @@ class Formatter
 
     html = encode(account.note)
     html = link_urls(html)
+    html = link_accounts(html)
     html = link_hashtags(html)
 
     html.html_safe # rubocop:disable Rails/OutputSafety
@@ -44,17 +50,28 @@ class Formatter
   end
 
   def link_urls(html)
-    html.gsub(URI.regexp(%w(http https))) do |match|
-      link_html(match)
-    end
+    Twitter::Autolink.auto_link_urls(html, url_target: '_blank',
+                                           link_attribute_block: lambda { |_, a| a[:rel] << ' noopener' },
+                                           link_text_block: lambda { |_, text| link_html(text) })
   end
 
   def link_mentions(html, mentions)
     html.gsub(Account::MENTION_RE) do |match|
       acct    = Account::MENTION_RE.match(match)[1]
-      mention = mentions.find { |item| item.account.acct.casecmp(acct).zero? }
+      mention = mentions.find { |item| TagManager.instance.same_acct?(item.account.acct, acct) }
 
       mention.nil? ? match : mention_html(match, mention.account)
+    end
+  end
+
+  def link_accounts(html)
+    html.gsub(Account::MENTION_RE) do |match|
+      acct = Account::MENTION_RE.match(match)[1]
+      username, domain = acct.split('@')
+      domain = nil if TagManager.instance.local_domain?(domain)
+      account = Account.find_remote(username, domain)
+
+      account.nil? ? match : mention_html(match, account)
     end
   end
 
@@ -70,7 +87,7 @@ class Formatter
     suffix = url[prefix.length + 30..-1]
     cutoff = url[prefix.length..-1].length > 30
 
-    "<a rel=\"nofollow noopener\" target=\"_blank\" href=\"#{url}\"><span class=\"invisible\">#{prefix}</span><span class=\"#{cutoff ? 'ellipsis' : ''}\">#{text}</span><span class=\"invisible\">#{suffix}</span></a>"
+    "<span class=\"invisible\">#{prefix}</span><span class=\"#{cutoff ? 'ellipsis' : ''}\">#{text}</span><span class=\"invisible\">#{suffix}</span>"
   end
 
   def hashtag_html(match)

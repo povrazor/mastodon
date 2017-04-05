@@ -14,7 +14,10 @@ const StatusList = React.createClass({
     onScroll: React.PropTypes.func,
     trackScroll: React.PropTypes.bool,
     isLoading: React.PropTypes.bool,
-    prepend: React.PropTypes.node
+    isUnread: React.PropTypes.bool,
+    hasMore: React.PropTypes.bool,
+    prepend: React.PropTypes.node,
+    emptyMessage: React.PropTypes.node
   },
 
   getDefaultProps () {
@@ -71,27 +74,43 @@ const StatusList = React.createClass({
   },
 
   render () {
-    const { statusIds, onScrollToBottom, trackScroll, isLoading, prepend } = this.props;
+    const { statusIds, onScrollToBottom, trackScroll, isLoading, isUnread, hasMore, prepend, emptyMessage } = this.props;
 
-    let loadMore = '';
+    let loadMore       = '';
+    let scrollableArea = '';
+    let unread         = '';
 
-    if (!isLoading && statusIds.size > 0) {
+    if (!isLoading && statusIds.size > 0 && hasMore) {
       loadMore = <LoadMore onClick={this.handleLoadMore} />;
     }
 
-    const scrollableArea = (
-      <div className='scrollable' ref={this.setRef}>
-        <div>
-          {prepend}
+    if (isUnread) {
+      unread = <div className='status-list__unread-indicator' />;
+    }
 
-          {statusIds.map((statusId) => {
-            return <StatusContainer key={statusId} id={statusId} />;
-          })}
+    if (isLoading || statusIds.size > 0 || !emptyMessage) {
+      scrollableArea = (
+        <div className='scrollable' ref={this.setRef}>
+          {unread}
 
-          {loadMore}
+          <div>
+            {prepend}
+
+            {statusIds.map((statusId) => {
+              return <StatusContainer key={statusId} id={statusId} />;
+            })}
+
+            {loadMore}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      scrollableArea = (
+        <div className='empty-column-indicator' ref={this.setRef}>
+          {emptyMessage}
+        </div>
+      );
+    }
 
     if (trackScroll) {
       return (

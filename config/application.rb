@@ -2,11 +2,13 @@ require_relative 'boot'
 
 require 'rails/all'
 
-require_relative '../app/lib/exceptions'
-
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
+
+require_relative '../app/lib/exceptions'
+require_relative '../lib/paperclip/gif_transcoder'
+require_relative '../lib/paperclip/video_transcoder'
 
 Dotenv::Railtie.load
 
@@ -22,7 +24,7 @@ module Mastodon
 
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
-    config.i18n.available_locales = [:en, :de, :es, :pt, :fr, :hu, :uk]
+    config.i18n.available_locales = [:en, :de, :es, :pt, :fr, :hu, :uk, 'zh-CN', :fi]
     config.i18n.default_locale    = :en
 
     # config.paths.add File.join('app', 'api'), glob: File.join('**', '*.rb')
@@ -34,7 +36,7 @@ module Mastodon
       allow do
         origins  '*'
 
-        resource '/api/*',       headers: :any, methods: [:post, :put, :delete, :get, :options], credentials: false
+        resource '/api/*',       headers: :any, methods: [:post, :put, :delete, :get, :options], credentials: false, expose: ['Link', 'X-RateLimit-Reset', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-Request-Id']
         resource '/oauth/token', headers: :any, methods: [:post], credentials: false
       end
     end
@@ -49,12 +51,5 @@ module Mastodon
       Doorkeeper::AuthorizedApplicationsController.layout 'admin'
       Doorkeeper::Application.send :include, ApplicationExtension
     end
-
-    config.action_dispatch.default_headers = {
-      'Server'                 => 'Mastodon',
-      'X-Frame-Options'        => 'DENY',
-      'X-Content-Type-Options' => 'nosniff',
-      'X-XSS-Protection'       => '1; mode=block',
-    }
   end
 end

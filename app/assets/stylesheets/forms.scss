@@ -14,11 +14,15 @@ code {
     margin-bottom: 15px;
   }
 
-  .hint {
+  span.hint {
     display: block;
     color: $color3;
     font-size: 12px;
     margin-top: 4px;
+  }
+
+  p.hint {
+    margin-bottom: 15px;
   }
 
   .label_input {
@@ -93,6 +97,7 @@ code {
     width: 100%;
     outline: 0;
     font-family: inherit;
+    resize: vertical;
 
     &:invalid {
       box-shadow: none;

@@ -2,6 +2,7 @@ import PureRenderMixin from 'react-addons-pure-render-mixin';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import InnerHeader from '../../account/components/header';
 import ActionBar from '../../account/components/action_bar';
+import MissingIndicator from '../../../components/missing_indicator';
 
 const Header = React.createClass({
   contextTypes: {
@@ -9,11 +10,13 @@ const Header = React.createClass({
   },
 
   propTypes: {
-    account: ImmutablePropTypes.map.isRequired,
+    account: ImmutablePropTypes.map,
     me: React.PropTypes.number.isRequired,
     onFollow: React.PropTypes.func.isRequired,
     onBlock: React.PropTypes.func.isRequired,
-    onMention: React.PropTypes.func.isRequired
+    onMention: React.PropTypes.func.isRequired,
+    onReport: React.PropTypes.func.isRequired,
+    onMute: React.PropTypes.func.isRequired
   },
 
   mixins: [PureRenderMixin],
@@ -30,11 +33,20 @@ const Header = React.createClass({
     this.props.onMention(this.props.account, this.context.router);
   },
 
+  handleReport () {
+    this.props.onReport(this.props.account);
+    this.context.router.push('/report');
+  },
+
+  handleMute() {
+    this.props.onMute(this.props.account);
+  },
+
   render () {
     const { account, me } = this.props;
 
-    if (!account) {
-      return null;
+    if (account === null) {
+      return <MissingIndicator />;
     }
 
     return (
@@ -50,6 +62,8 @@ const Header = React.createClass({
           me={me}
           onBlock={this.handleBlock}
           onMention={this.handleMention}
+          onReport={this.handleReport}
+          onMute={this.handleMute}
         />
       </div>
     );

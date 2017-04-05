@@ -7,6 +7,7 @@ Index
 - [Frequently Asked Questions](Using-Mastodon/FAQ.md)
 - [List of Mastodon instances](Using-Mastodon/List-of-Mastodon-instances.md)
 - [Apps](Using-Mastodon/Apps.md)
+- [User Guide](Using-Mastodon/User-guide.md)
 
 ### Using the API
 - [API documentation](Using-the-API/API.md)
@@ -22,6 +23,7 @@ Index
 - [Development guide](Running-Mastodon/Development-guide.md)
 - [Alternative: Development with Vagrant](Running-Mastodon/Vagrant-guide.md)
 - [Administration guide](Running-Mastodon/Administration-guide.md)
+- [Tuning Mastodon](Running-Mastodon/Tuning.md)
 
 ### Contributing to Mastodon
 - [Sponsors](Contributing-to-Mastodon/Sponsors.md)
